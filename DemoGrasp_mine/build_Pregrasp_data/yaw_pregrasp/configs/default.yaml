@@ -1,0 +1,14 @@
+# Default grid for yaw-expanded pregrasp labels.
+yaw_angles: [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330]
+tilt_angles: [0, 15, 30]
+pitch_angles: [0, 15, 30]
+
+# Keep PPO observations in the trained canonical domain.  The real hand pose
+# is mapped back to yaw-expanded world geometry during execution.
+yaw_frame: pca_short
+canonical_obs: true
+canonical_obs_scope: scene
+direct_base_qpos: true
+
+rollout_root: /mnt/AAAI2027_grasp/PregraspPrior/data/rollouts/yaw_pregrasp
+field_root: /mnt/AAAI2027_grasp/PregraspPrior/data/fields/yaw_pregrasp

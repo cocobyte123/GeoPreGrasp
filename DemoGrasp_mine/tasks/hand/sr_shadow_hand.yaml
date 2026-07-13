@@ -1,0 +1,59 @@
+name: "sr_shadow_hand"
+robotAssetFile: "urdf/sr_grasp_description/urdf/pregrasp_movable_shadowhand.urdf"
+robotAssetFileVisualRealistic: "urdf/sr_grasp_description/urdf/pregrasp_movable_shadowhand.urdf"
+
+arm_dof_names: ['baseJX', 'baseJY', 'baseJZ', 'baseJROLL', 'baseJPITCH', 'baseJYAW']
+palm_link: "palm"
+fingertips_link: ["thdistal", "ffdistal", "mfdistal", "rfdistal", "lfdistal"]
+# No passive_joints — all 24 hand DOFs are active
+
+eef_link: "forearm"
+num_arm_dofs: 6
+palm_offset: [0, 0, 0]
+
+# 32 values: 6 base + 0 fixed(joint is collapsed) ... hmm let me reconsider
+# The URDF has: 6 base + 24 hand revolute + 1 base_to_forearm(fixed) + 5 fingertip(fixed)
+# With collapse_fixed_joints=True, the fixed joints are collapsed
+# DOF count = 6 base + 24 hand = 30
+# But init_configs reads default_dof_pos BEFORE asset is loaded...
+# Actually, the default_dof_pos is used in reset_idx. Let me count carefully:
+# After collapse_fixed_joints:
+#   base_to_forearm(fixed) → merged, baseYAW now parent of forearm
+#   FFtip/MFtip/RFtip/LFtip/thtip(fixed) → merged with distal links
+# Total DOF = 6 + 24 = 30
+# WRJ2, WRJ1, FFJ4, FFJ3, FFJ2, FFJ1, MFJ4, MFJ3, MFJ2, MFJ1,
+# RFJ4, RFJ3, RFJ2, RFJ1, LFJ5, LFJ4, LFJ3, LFJ2, LFJ1,
+# THJ5, THJ4, THJ3, THJ2, THJ1 = 24 hand
+default_dof_pos: [
+  0.5, -0.1, 0.4, 0, 1.57, 0,
+  0, 0,
+  0,0,0,0, 0,0,0,0, 0,0,0,0,
+  0,0,0,0,0,
+  0,0,0,0,0
+]
+
+num_obs_dict:
+  "armdof": 6
+  "handdof": 24
+  "fulldof": 30
+  "eefpose": 7
+  "ftpos": 15
+  "palmpose": 7
+  "handposerror": 24
+  "lastact": 30
+  "objxyz": 3
+  "objpose": 7
+  "objinitpose": 7
+  "pcfeat": 64
+  "refaction": 30
+  "objpcl": 1536
+
+numActions: 30
+hardware_active_hand_dof_names: [
+  "WRJ2", "WRJ1",
+  "FFJ4", "FFJ3", "FFJ2", "FFJ1",
+  "MFJ4", "MFJ3", "MFJ2", "MFJ1",
+  "RFJ4", "RFJ3", "RFJ2", "RFJ1",
+  "LFJ5", "LFJ4", "LFJ3", "LFJ2", "LFJ1",
+  "THJ5", "THJ4", "THJ3", "THJ2", "THJ1"
+]

@@ -1,0 +1,32 @@
+# pregrasp_eval 常用命令
+
+本目录当前保留 `PregraspPrior` field/yaw/scorer 评估入口。
+旧 DGA 生成式 pregrasp bridge 已移除。
+
+## Heatmap 引导初始化最小闭环
+
+先把 PPO rollout 聚合成物体级 heatmap：
+
+```bash
+python -m build_Pregrasp_data.aggregate.build_field_store_from_rollouts \
+  --pregrasp-root /mnt/data1/zju/zhangziling/AAAI2027_Grasp/PregraspPrior \
+  --rollout-root /mnt/data1/zju/zhangziling/AAAI2027_Grasp/PregraspPrior/data/rollouts/ppo_random_mtp \
+  --output-root /mnt/data1/zju/zhangziling/AAAI2027_Grasp/PregraspPrior/data/fields/ppo_random_mtp \
+  --dataset-name ppo_random_mtp \
+  --overwrite
+```
+
+再用 heatmap 选 M/T/P 初始化并跑 SE residual PPO：
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python3 pregrasp_eval/eval_pregrasp_field_SE_residual.py \
+  task=grasp train=PPOOneStep hand=new_sr_hand_simple \
+  test=True headless=true force_render=false \
+  num_envs=4 \
+  checkpoint=runs_ppo/2026-06-22_07-59-10_new_sr_hand_simple_se_tilt_pitch_0-15-30_pitch_0-15-30/model_15000.pt \
+  +pregrasp_field_root=/mnt/data1/zju/zhangziling/AAAI2027_Grasp/PregraspPrior/data/fields/ppo_random_mtp \
+  +pregrasp_field_topk=1 \
+  +pregrasp_field_selection=cycle \
+  +pregrasp_collect_max_batches=1 \
+  +pregrasp_collect_rollout_root=/mnt/data1/zju/zhangziling/AAAI2027_Grasp/PregraspPrior/data/rollouts/ppo_field_guided_eval
+```

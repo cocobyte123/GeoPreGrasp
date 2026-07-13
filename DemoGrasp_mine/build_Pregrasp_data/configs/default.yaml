@@ -1,0 +1,16 @@
+paths:
+  pregrasp_root: /mnt/AAAI2027_grasp/PregraspPrior
+  rollout_root: /mnt/AAAI2027_grasp/PregraspPrior/data/rollouts/ppo_random_mtp
+  output_root: /mnt/AAAI2027_grasp/PregraspPrior/data/fields/ppo_random_mtp
+
+rollout:
+  expected_num_envs: 3200
+
+field:
+  dataset_name: ppo_rollout_fields
+  sphere_template: geodesic
+  subdivision: 3
+  tilt_angles: [0, 15, 30]
+  pitch_angles: [0, 15, 30]
+  confidence: normalized_attempt_count
+  assignment: hard_nearest

@@ -1,0 +1,8 @@
+name: scorer_mlp
+rollout_root: /mnt/AAAI2027_grasp/PregraspPrior/data/rollouts/pca_short_yaw12_tilt0_pitch0_scene
+output_dir: /mnt/AAAI2027_grasp/PregraspPrior/data/models/scorer_mlp_pca_short_yaw12_tilt0_pitch0_scene
+epochs: 30
+batch_size: 512
+lr: 0.001
+val_fraction: 0.15
+

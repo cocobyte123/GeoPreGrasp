@@ -1,0 +1,19 @@
+# 本地运行备忘
+#
+# 不要在仓库内保存 API token。需要使用 Claude/DeepSeek 时，在本机 shell
+# 或私有环境文件里设置 ANTHROPIC_BASE_URL / ANTHROPIC_AUTH_TOKEN /
+# ANTHROPIC_API_KEY / ANTHROPIC_MODEL。
+
+# X11 接口转发
+export DISPLAY=localhost:10.0
+
+xclock
+
+# 缺少动态库时
+export LD_LIBRARY_PATH=/mnt/data01/data_zzl/envs/demo-grasp/lib:$LD_LIBRARY_PATH
+
+# 轨迹演示：Inspire 手，16 个环境，看 example 物体
+CUDA_VISIBLE_DEVICES=0 python play_traj.py num_envs=16 task.env.asset.multiObjectList="union_ycb_unidex/example.yaml"
+                                                                                                                     
+# 只有手
+python play_hand_only.py --hand shadow_simple --num_envs 16

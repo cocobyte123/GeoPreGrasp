@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+dist/
+build/
+
+# Virtual environments
+.venv/
+demograsp/
+demograsp_new_coco_20260627_222202/
+DemoGrasp_mine/.venv/
+DemoGrasp_mine/demograsp/
+DemoGrasp_mine/demograsp_new_coco_20260627_222202/
+
+# Large assets / datasets / checkpoints
+DemoGrasp_mine/assets/
+DemoGrasp_mine/data/
+DemoGrasp_mine/ckpt/
+DemoGrasp_mine/runs_ppo/
+PregraspPrior/data/
+
+# Model/data binaries
+*.pt
+*.pth
+*.ckpt
+*.npz
+*.npy
+*.pkl
+*.gz
+
+# Generated outputs / logs
+outputs/
+runs/
+wandb/
+logs/
+*.log
+*.tmp
+
+# Third-party / local deps
+DemoGrasp_mine/src/
+DemoGrasp_mine/thirdparty/
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Local inner git backup
+DemoGrasp_mine/.git_backup_before_outer_repo/

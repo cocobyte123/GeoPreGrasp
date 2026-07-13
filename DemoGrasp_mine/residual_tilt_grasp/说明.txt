@@ -1,0 +1,85 @@
+# residual_tilt_grasp 说明
+#
+# 该目录仍被 `residual_se_grasp` 和 `pregrasp_eval` 作为 residual PPO
+# 基础实现引用。不要在仓库内保存 API token；需要外部服务时，在本机 shell
+# 或私有 env 文件中设置环境变量。
+
+#激活环境
+source .venv/bin/activate
+
+#X11 接口转发
+export DISPLAY=localhost:11.0
+
+xclock
+
+#缺少文件
+export LD_LIBRARY_PATH=/mnt/data01/data_zzl/envs/demo-grasp/lib:$LD_LIBRARY_PATH
+
+#训练模型
+
+
+#验证模型
+CUDA_VISIBLE_DEVICES=1
+
+#两个类型的手相互切换
+sr_shadow_hand
+shadow_simple
+new_sr_hand_simple
+
+
+# 验证当前的轨迹数据：围绕物体中心按水平轴旋转整条手部轨迹
+ CUDA_VISIBLE_DEVICES=0 python residual_tilt_grasp/play_tra_rot.py   --hand new_sr_hand_simple --num_envs 16   --traj_rot 0 45 90 135 180 --rot_axis 1 0 0
+
+CUDA_VISIBLE_DEVICES=5 python -u residual_tilt_grasp/train_tilted_hand_only.py \
+  train=PPOOneStep hand=new_sr_hand_simple num_envs=3200 headless=True \
+  checkpoint=runs_ppo/hand_only_grasp_2026-06-05_14-52-57/model_4000.pt \
+  '+tilt_angles=[0]' \
+  '+tilt_axis=[0,1,0]' \
+  '+tilt_sampling=random' \
+  task.env.asset.multiObjectList="union_ycb_unidex/union_ycb_debugset.yaml" \
+  task.env.observationType="eefpose+objinitpose+objpcl" \
+  task.env.enablePointCloud=True \
+  train.params.is_vision=True
+
+#重要的权重路径
+base权重，单角度0度
+runs_ppo/hand_only_grasp_2026-06-05_14-52-57/model_4000.pt
+  '+baseline_checkpoint=runs_ppo/hand_only_grasp_2026-06-05_14-52-57/model_4000.pt' \
+   checkpoint=runs_ppo/2026-06-18_14-27-12_new_sr_hand_simple_residual_angles_0-15-30/model_3200.pt
+多角度
+
+#多角度残差训练
+注意：baseline_checkpoint是断点续训的权重，不是base权重，含义已经变了
+
+CUDA_VISIBLE_DEVICES=6 python -u residual_tilt_grasp/train_tilted_hand_only_reslearn.py \
+  train=PPOOneStep hand=new_sr_hand_simple num_envs=3200 headless=True \
+  '+baseline_checkpoint=runs_ppo/2026-06-18_14-27-12_new_sr_hand_simple_residual_angles_0-15-30/model_3200.pt' \
+  '+tilt_angles=[0,15,30,45,60]' \
+  '+tilt_axis=[1,0,0]' \
+  '+tilt_sampling=random' \
+  '+residual_mode=hybrid' \
+  task.env.asset.multiObjectList="union_ycb_unidex/union_ycb_debugset.yaml" \
+  task.env.observationType="eefpose+objinitpose+objpcl" \
+  task.env.enablePointCloud=True \
+  train.params.is_vision=True
+
+#多角度的残差验证
+
+CUDA_VISIBLE_DEVICES=0 python -u residual_tilt_grasp/train_tilted_hand_only_reslearn.py \
+  train=PPOOneStep hand=new_sr_hand_simple num_envs=16 \
+  test=True headless=False \
+ checkpoint=runs_ppo/2026-06-18_14-27-12_new_sr_hand_simple_residual_angles_0-15-30/model_3000.pt \
+  '+tilt_angles=[30]' \
+  '+tilt_axis=[1,0,0]' \
+  '+tilt_sampling=cycle' \
+  '+residual_mode=hybrid' \
+  task.env.asset.multiObjectList="union_ycb_unidex/union_ycb_debugset.yaml" \
+  task.env.observationType="eefpose+objinitpose+objpcl" \
+  task.env.enablePointCloud=True \
+  train.params.is_vision=True
+
+
+
+
+# 模板轨迹演示（新shadow hand）
+python residual_tilt_grasp/play_tra_rot.py --hand new_sr_hand_simple --num_envs 16 --traj_rot 0

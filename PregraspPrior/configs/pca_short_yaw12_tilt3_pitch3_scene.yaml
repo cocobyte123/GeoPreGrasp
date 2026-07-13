@@ -1,0 +1,21 @@
+name: pca_short_yaw12_tilt3_pitch3_scene
+
+data:
+  rollout_root: /mnt/AAAI2027_grasp/PregraspPrior/data/rollouts/pca_short_yaw12_tilt3_pitch3_scene
+  field_root: /mnt/AAAI2027_grasp/PregraspPrior/data/fields/pca_short_yaw12_tilt3_pitch3_scene
+
+pregrasp:
+  yaw_frame: pca_short
+  yaw_angles: [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330]
+  tilt_angles: [0, 15, 30]
+  pitch_angles: [0, 15, 30]
+  canonical_obs: true
+  canonical_obs_scope: scene
+  direct_base_qpos: true
+
+ppo:
+  repo_root: /mnt/AAAI2027_grasp/DemoGrasp_mine
+  env_name: demograsp_new_coco_20260627_222202
+  checkpoint: runs_ppo/2026-06-22_07-59-10_new_sr_hand_simple_se_tilt_pitch_0-15-30_pitch_0-15-30/model_15000.pt
+  multi_object_list: union_ycb_unidex/union_ycb_debugset.yaml
+

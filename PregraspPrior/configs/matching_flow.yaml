@@ -1,0 +1,7 @@
+name: matching_flow
+status: placeholder
+input: object_point_cloud_object
+condition: object_pose_world
+target: successful_yaw_tilt_pitch_candidates
+note: This shares the same rollout dataset interface as scorer_mlp.
+

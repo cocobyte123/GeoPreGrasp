@@ -1,0 +1,19 @@
+# grasp_base 说明
+#
+# 该目录是 hand-only 基础环境。当前主线不会直接从这里启动新实验，
+# 但 `residual_tilt_grasp.tilted_hand_only_grasp` 仍继承 `grasp_base.hand_only_grasp.HandOnlyGrasp`，
+# 因此保留源码。
+#
+# 不要在仓库内保存 API token。需要配置外部服务时，在本机 shell 或私有 env
+# 文件中设置环境变量。
+
+# X11 接口转发
+export DISPLAY=localhost:10.0
+
+xclock
+
+# 缺少动态库时
+export LD_LIBRARY_PATH=/mnt/data01/data_zzl/envs/demo-grasp/lib:$LD_LIBRARY_PATH
+
+# 旧的 `new_RotRL` 启动命令已随阶段性代码一起移除。
+# 当前训练/评估入口请看 `residual_se_grasp/README.md` 和 `PROJECT_SLIMMING.md`。

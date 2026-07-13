@@ -1,0 +1,81 @@
+#激活环境
+source .venv/bin/activate
+
+#X11 接口转发
+export DISPLAY=localhost:11.0
+
+xclock
+
+#缺少文件
+export LD_LIBRARY_PATH=/mnt/data01/data_zzl/envs/demo-grasp/lib:$LD_LIBRARY_PATH
+
+#训练模型
+
+#可视化
+CUDA_VISIBLE_DEVICES=0 python residual_se_grasp/play_traj.py \
+  task=grasp train=PPOOneStep hand=new_sr_hand_simple \
+  headless=false force_render=true \
+  num_envs=20 +play_mode=static \
+  +se_guide_mode=tilt_pitch \
+  +se_tilt_angles=[0,15,30,45] \
+  +se_tilt_axis=[1,0,0] \
+  +se_pitch_angles=[0,10,20] \
+  +frame=0
+
+-可视化，轨迹
+CUDA_VISIBLE_DEVICES=0 python residual_se_grasp/play_traj.py \
+  task=grasp train=PPOOneStep hand=new_sr_hand_simple \
+  headless=false force_render=true \
+  num_envs=20 +play_mode=play \
+  +se_guide_mode=tilt_pitch \
+  +se_tilt_angles=[0,15,30,45] \
+  +se_tilt_axis=[1,0,0] \
+  +se_pitch_angles=[-20,-10,0,10,20] \
+  +start_frame=0 +end_frame=18 \
+  +interpolation_steps=20 +frame_hold=1 \
+  +play_eval_success=True +episodes=3 \
+  +se_preview_object_asset=union_ycb_unidex/urdf/013_apple.urdf
+
+
+
+-物品：
+union_ycb_unidex/urdf/065-d_cups.urdf
+union_ycb_unidex/urdf/unidex_core_mug-642eb7c42ebedabd223d193f5a188983_006.urdf
+union_ycb_unidex/urdf/unidex_core_bowl-8d1f575e9223b28b8183a4a81361b94_008.urdf
+union_ycb_unidex/urdf/unidex_core_bottle-b13f6dc78d904e5c30612f5c0ef21eb8_006.urdf
+union_ycb_unidex/urdf/013_apple.urdf
+
+
+CUDA_VISIBLE_DEVICES=0 python residual_se_grasp/train_se_reslearn.py \
+  task=grasp train=PPOOneStep hand=new_sr_hand_simple \
+  headless=false force_render=true \
+  num_envs=25 +se_view_only=True +se_sampling=cycle \
+  +se_yaw_angles=[-30,-15,0,15,30] \
+  +se_pitch_angles=[-20,-10,0,10,20]
+
+
+#训练模型
+CUDA_VISIBLE_DEVICES=6 python residual_se_grasp/train_se_reslearn.py \
+  task=grasp train=PPOOneStep hand=new_sr_hand_simple headless=true \
+  num_envs=3200 +se_sampling=random \
+  +se_guide_mode=tilt_pitch \
+  +se_tilt_angles=[0] \
+  +se_tilt_axis=[1,0,0] \
+  +se_pitch_angles=[0]
+  +se_baseline_checkpoint=runs_ppo/2026-06-20_15-45-41_new_sr_hand_simple_angles_0/model_5700.pt
+
+
+  #评估模型
+  cd /mnt/AAAI2027_grasp/DemoGrasp_mine
+source demograsp_new_coco_20260627_222202/bin/activate
+
+CUDA_VISIBLE_DEVICES=0 python3 residual_se_grasp/eval_se_residual.py \
+  task=grasp train=PPOOneStep hand=new_sr_hand_simple \
+  test=True headless=true force_render=true \
+  num_envs=3200 \
+  task.env.asset.multiObjectList="union_ycb_unidex/union_ycb_debugset.yaml" \
+  checkpoint=runs_ppo/2026-06-22_07-59-10_new_sr_hand_simple_se_tilt_pitch_0-15-30_pitch_0-15-30/model_15000.pt \
+  +se_guide_mode=tilt_pitch \
+  --tilt_angles=0 \
+  --pitch_angles=0 \
+  --se_sampling=random
