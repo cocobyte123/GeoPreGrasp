@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<robot name="tilted_table">
+  <link name="table">
+    <inertial>
+      <origin xyz="0 0 -0.1515" rpy="0 0 0"/>
+      <mass value="20.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.1515" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.9 0.8 0.3"/>
+      </geometry>
+      <material name="table_gray">
+        <color rgba="0.45 0.45 0.45 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.1515" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.9 0.8 0.3"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="mat">
+    <inertial>
+      <origin xyz="0 0 -0.0015" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.0015" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.6 0.8 0.003"/>
+      </geometry>
+      <material name="mat_dark">
+        <color rgba="0.08 0.08 0.08 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.0015" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.6 0.8 0.003"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="table_to_mat" type="fixed">
+    <parent link="table"/>
+    <child link="mat"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+</robot>

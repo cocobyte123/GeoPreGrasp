@@ -4,7 +4,7 @@ import json
 import os
 import sys
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,25 +31,22 @@ from residual_tilt_grasp.train_tilted_hand_only_reslearn import (
 
 
 TASK_NAME = "se_residual_grasp"
+CHINA_TZ = timezone(timedelta(hours=8))
 
 
-def _format_angle(angle):
-    return f"{float(angle):g}".replace("-", "m").replace(".", "p")
+def _dataset_name_from_cfg(cfg):
+    asset_cfg = cfg.task.env.asset
+    if bool(asset_cfg.get("multiObject", True)):
+        asset_path = str(asset_cfg.get("multiObjectList", "") or "")
+    else:
+        asset_path = str(asset_cfg.get("objectAssetFile", "") or "")
+    dataset = asset_path.split("/", 1)[0].strip()
+    return dataset or "dataset"
 
 
 def _default_run_name(cfg):
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    primary = (
-        cfg.task.env.seTiltAngles
-        if cfg.task.env.seGuideMode == "tilt_pitch"
-        else cfg.task.env.seYawAngles
-    )
-    primary_text = "-".join(_format_angle(v) for v in primary)
-    pitch = "-".join(_format_angle(v) for v in cfg.task.env.sePitchAngles)
-    return (
-        f"{timestamp}_{cfg.hand.name}_se_{cfg.task.env.seGuideMode}_"
-        f"{primary_text}_pitch_{pitch}"
-    )
+    timestamp = datetime.now(CHINA_TZ).strftime("%Y%m%d_%H%M")
+    return f"{_dataset_name_from_cfg(cfg)}_{timestamp}"
 
 
 def configure_se_training(cfg):

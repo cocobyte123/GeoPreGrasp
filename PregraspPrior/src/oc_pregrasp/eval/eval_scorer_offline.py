@@ -13,6 +13,11 @@ from torch.utils.data import DataLoader
 from oc_pregrasp.data.rollout_dataset import YawPregraspRolloutDataset
 from oc_pregrasp.models.scorer_mlp import PointNetScorer
 
+try:
+    from tqdm.auto import tqdm
+except ImportError:  # pragma: no cover - optional dependency
+    tqdm = None
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -130,6 +135,12 @@ def mean_available(rows, key):
     return float(np.mean(values))
 
 
+def _progress(iterable, enabled: bool, **kwargs):
+    if enabled and tqdm is not None:
+        return tqdm(iterable, **kwargs)
+    return iterable
+
+
 def main():
     args = parse_args()
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
@@ -151,12 +162,20 @@ def main():
     total_loss = 0.0
     total_count = 0
     total_correct = 0
+    total_positive = 0.0
     candidate_stats = defaultdict(
         lambda: defaultdict(lambda: {"count": 0, "success_sum": 0.0, "score_sum": 0.0})
     )
 
+    progress = _progress(
+        loader,
+        enabled=True,
+        desc="offline scorer eval",
+        dynamic_ncols=True,
+        leave=True,
+    )
     with torch.no_grad():
-        for raw_batch in loader:
+        for raw_batch in progress:
             batch = move_batch(raw_batch, device)
             logits = model(batch["point_cloud"], batch["angle"], batch["object_pose"])
             labels = batch["label"]
@@ -164,6 +183,7 @@ def main():
             total_loss += float(criterion(logits, labels).detach().cpu())
             total_count += int(labels.numel())
             total_correct += int(((scores >= 0.5).float() == labels).sum().cpu())
+            total_positive += float(labels.sum().detach().cpu())
 
             scores_np = scores.reshape(-1).detach().cpu().numpy()
             labels_np = labels.reshape(-1).detach().cpu().numpy()
@@ -179,6 +199,12 @@ def main():
                 stats["count"] += 1
                 stats["success_sum"] += float(label)
                 stats["score_sum"] += float(score)
+            if tqdm is not None:
+                progress.set_postfix(
+                    bce=f"{total_loss / max(total_count, 1):.4f}",
+                    acc=f"{total_correct / max(total_count, 1):.4f}",
+                    pos=f"{total_positive / max(total_count, 1):.4f}",
+                )
 
     scores = np.concatenate(all_scores, axis=0)
     labels = np.concatenate(all_labels, axis=0)

@@ -13,6 +13,11 @@ from torch.utils.data import DataLoader, Subset
 from oc_pregrasp.data.rollout_dataset import YawPregraspRolloutDataset
 from oc_pregrasp.models.scorer_mlp import PointNetScorer
 
+try:
+    from tqdm.auto import tqdm
+except ImportError:  # pragma: no cover - optional dependency
+    tqdm = None
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -47,15 +52,28 @@ def move_batch(batch, device: torch.device):
     }
 
 
-def run_epoch(model, loader, criterion, device, optimizer=None):
+def _progress(iterable, enabled: bool, **kwargs):
+    if enabled and tqdm is not None:
+        return tqdm(iterable, **kwargs)
+    return iterable
+
+
+def run_epoch(model, loader, criterion, device, optimizer=None, desc: str = ""):
     training = optimizer is not None
     model.train(training)
     total_loss = 0.0
     total_count = 0
     total_correct = 0
     total_positive = 0
+    progress = _progress(
+        loader,
+        enabled=True,
+        desc=desc,
+        dynamic_ncols=True,
+        leave=False,
+    )
     with torch.set_grad_enabled(training):
-        for raw_batch in loader:
+        for raw_batch in progress:
             batch = move_batch(raw_batch, device)
             logits = model(
                 batch["point_cloud"], batch["angle"], batch["object_pose"]
@@ -73,6 +91,12 @@ def run_epoch(model, loader, criterion, device, optimizer=None):
             total_count += count
             total_correct += int((preds == labels).sum().detach().cpu())
             total_positive += int(labels.sum().detach().cpu())
+            if tqdm is not None:
+                progress.set_postfix(
+                    loss=f"{total_loss / max(total_count, 1):.4f}",
+                    acc=f"{total_correct / max(total_count, 1):.4f}",
+                    pos=f"{total_positive / max(total_count, 1):.4f}",
+                )
     return {
         "loss": total_loss / max(total_count, 1),
         "accuracy": total_correct / max(total_count, 1),
@@ -144,9 +168,20 @@ def main():
     for local_epoch in range(1, args.epochs + 1):
         epoch = start_epoch + local_epoch
         train_metrics = run_epoch(
-            model, train_loader, criterion, device, optimizer=optimizer
+            model,
+            train_loader,
+            criterion,
+            device,
+            optimizer=optimizer,
+            desc=f"epoch {epoch:03d} train",
         )
-        val_metrics = run_epoch(model, val_loader, criterion, device)
+        val_metrics = run_epoch(
+            model,
+            val_loader,
+            criterion,
+            device,
+            desc=f"epoch {epoch:03d} val",
+        )
         record = {
             "epoch": epoch,
             "train": train_metrics,
