@@ -4,7 +4,7 @@
 Expected output layout:
 
   <output-root>/<dataset>/
-    meshes/<object_id>.obj
+    meshes/<object_id>.<obj|stl|ply>
     urdf/<object_id>.urdf
     pointclouds/<object_id>.npy
     train.yaml
@@ -44,23 +44,52 @@ class DatasetSpec:
     name: str
     root_name: str
     mesh_mode: str
+    mesh_layout: str
+    mesh_extension: str
+    split_keys: tuple[str, str, str]
     align_pointcloud_to_mesh: bool = False
 
 
 DATASETS = {
-    "realdex": DatasetSpec("realdex", "Realdex", "meshdata"),
+    "realdex": DatasetSpec(
+        "realdex",
+        "Realdex",
+        "meshdata",
+        "flat",
+        "obj",
+        ("_train_split", "_test_split", "_all_split"),
+    ),
     "dexgraspnet": DatasetSpec(
         "dexgraspnet",
         "dexgraspnet",
         "obj_scale_urdf",
+        "flat",
+        "obj",
+        ("_train_split", "_test_split", "_all_split"),
         align_pointcloud_to_mesh=True,
+    ),
+    "multidex": DatasetSpec(
+        "multidex",
+        "MultiDex_UR",
+        "object",
+        "multidex_nested",
+        "stl",
+        ("train_split", "test_split", "all_split"),
+    ),
+    "dexgrab": DatasetSpec(
+        "dexgrab",
+        "DexGRAB",
+        "contact_meshes",
+        "flat",
+        "ply",
+        ("train_split", "test_split", "all_split"),
     ),
 }
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Prepare RealDex/DexGraspNet objects for DemoGrasp."
+        description="Prepare DexGrasp-family objects for DemoGrasp."
     )
     parser.add_argument(
         "--source-root",
@@ -272,8 +301,25 @@ def save_points(
     np.save(dst, sample_points(points, count, sampling, rng))
 
 
-def object_ids_from_mesh_dir(mesh_dir: Path) -> set[str]:
-    return {path.stem for path in mesh_dir.glob("*.obj")}
+def discover_meshes(spec: DatasetSpec, mesh_dir: Path) -> dict[str, Path]:
+    if spec.mesh_layout == "flat":
+        return {
+            path.stem: path
+            for path in mesh_dir.glob(f"*.{spec.mesh_extension}")
+            if path.is_file()
+        }
+
+    if spec.mesh_layout == "multidex_nested":
+        meshes: dict[str, Path] = {}
+        for path in mesh_dir.glob(f"*/*/*.{spec.mesh_extension}"):
+            if not path.is_file():
+                continue
+            subset = path.parent.parent.name
+            object_name = path.stem
+            meshes[f"{subset}+{object_name}"] = path
+        return meshes
+
+    raise ValueError(f"Unsupported mesh layout: {spec.mesh_layout}")
 
 
 def filter_split(values: Iterable[str], available: set[str]) -> list[str]:
@@ -309,7 +355,8 @@ def convert_dataset(
     pcds = load_pickle(pcd_path)
     splits = load_json(grasp_path) if grasp_path.exists() else {}
 
-    mesh_ids = object_ids_from_mesh_dir(mesh_dir)
+    mesh_paths = discover_meshes(spec, mesh_dir)
+    mesh_ids = set(mesh_paths)
     pcd_ids = set(pcds)
     all_available_ids = sorted(mesh_ids & pcd_ids)
     available_ids = all_available_ids[:limit] if limit > 0 else all_available_ids
@@ -325,6 +372,8 @@ def convert_dataset(
         "dataset": spec.name,
         "source_root": str(dataset_root),
         "output_root": str(out_dir),
+        "mesh_layout": spec.mesh_layout,
+        "mesh_extension": spec.mesh_extension,
         "available_objects": len(all_available_ids),
         "selected_objects": len(available_ids),
         "mesh_without_pointcloud": len(missing_pcd),
@@ -345,8 +394,8 @@ def convert_dataset(
     urdf_names: list[str] = []
     pointcloud_scales: list[float] = []
     for object_id in available_ids:
-        mesh_src = mesh_dir / f"{object_id}.obj"
-        mesh_name = f"{object_id}.obj"
+        mesh_src = mesh_paths[object_id]
+        mesh_name = f"{object_id}.{spec.mesh_extension}"
         urdf_name = f"{object_id}.urdf"
         object_points = pcds[object_id]
         if align_pointcloud_to_mesh:
@@ -369,10 +418,11 @@ def convert_dataset(
         "assets.yaml": available_ids,
         "debug.yaml": available_ids[:debug_count],
     }
+    train_key, test_key, all_key = spec.split_keys
     split_map = {
-        "train.yaml": "_train_split",
-        "test.yaml": "_test_split",
-        "all.yaml": "_all_split",
+        "train.yaml": train_key,
+        "test.yaml": test_key,
+        "all.yaml": all_key,
     }
     for output_name, split_key in split_map.items():
         if split_key in splits:
@@ -405,6 +455,7 @@ def convert_dataset(
 def main() -> None:
     args = parse_args()
     dataset_names = DATASETS.keys() if args.dataset == "all" else [args.dataset]
+
     summaries = []
     for dataset_name in dataset_names:
         summary = convert_dataset(
